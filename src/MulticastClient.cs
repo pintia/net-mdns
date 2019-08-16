@@ -117,18 +117,18 @@ namespace Makaretu.Dns
                     log.Debug($"Will send via {localEndpoint}");
                     if (!senders.TryAdd(address, sender)) // Should not fail
                     {
-                        sender.Dispose();
+                        sender.Close();
                     }
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressNotAvailable)
                 {
                     // VPN NetworkInterfaces
-                    sender.Dispose();
+                    sender.Close();
                 }
                 catch (Exception e)
                 {
                     log.Error($"Cannot setup send socket for {address}: {e.Message}");
-                    sender.Dispose();
+                    sender.Close();
                 }
             }
 
@@ -167,9 +167,9 @@ namespace Makaretu.Dns
                 {
                     var task = receiver.ReceiveAsync();
 
-                    _ = task.ContinueWith(x => Listen(receiver), TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously);
+                    _ = task.ContinueWith(x => Listen(receiver), TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.None);
 
-                    _ = task.ContinueWith(x => MessageReceived?.Invoke(this, x.Result), TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously);
+                    _ = task.ContinueWith(x => MessageReceived?.Invoke(this, x.Result), TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.None);
 
                     await task.ConfigureAwait(false);
                 }
@@ -204,7 +204,7 @@ namespace Makaretu.Dns
 
                     foreach (var receiver in receivers)
                     {
-                        receiver.Dispose();
+                        receiver.Close();
                     }
                     receivers.Clear();
 
@@ -212,7 +212,7 @@ namespace Makaretu.Dns
                     {
                         if (senders.TryRemove(address, out var sender))
                         {
-                            sender.Dispose();
+                            sender.Close();
                         }
                     }
                     senders.Clear();
